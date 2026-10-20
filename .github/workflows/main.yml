@@ -22,7 +22,7 @@ jobs:
 
       - name: Test EC2 connectivity
         run: |
-          ansible django_servers \
+          ansible \
             -i inventory.ini \
             -m ping
 
