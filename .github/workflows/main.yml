@@ -1,4 +1,4 @@
-name: Django CI/CD
+name: Django Deployment
 
 on:
   push:
@@ -6,44 +6,28 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Ansible
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ansible
-          ansible-galaxy collection install community.docker
+      - name: Check Ansible
+        run: ansible --version
 
-      - name: Configure SSH
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-        run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
-
-      - name: Test connection
+      - name: Test EC2 connectivity
         run: |
           ansible django_servers \
             -i inventory.ini \
-            --private-key ~/.ssh/deploy_key \
             -m ping
 
-      - name: Deploy Django to 3 servers
+      - name: Deploy Django
         run: |
           ansible-playbook \
             -i inventory.ini \
-            playbook.yml \
-            --private-key ~/.ssh/deploy_key
+            playbook.yml
